@@ -185,7 +185,7 @@ def generate_notes(res, bug11, fname="NOTES.md"):
              "evidence for a single-indicator observation structure, not a null.")
     L.append("\n*A DFM loading is undirected — surviving triage establishes only that there is "
              "common-component information to model, not where the series enters the mechanistic model.*\n")
-    with open(fname, "w") as fh:
+    with open(fname, "w", encoding="utf-8") as fh:
         fh.write("\n".join(L))
     return "\n".join(L)
 
