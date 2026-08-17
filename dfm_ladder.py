@@ -150,16 +150,25 @@ class LadderDFM(MLEModel):
 
 
 # ==================================================================== fitting
-def fit_multistart(endog, factor, idio, n_starts=3, seed=0, maxiter=1000):
-    """Fit from several dispersed starts; return (best_result, agreement_report)."""
+def fit_multistart(endog, factor, idio, n_starts=5, seed=0, maxiter=1000):
+    """Fit from several dispersed starts; return (best_result, agreement_report).
+    Dispersion scales variances/AR coeffs and randomly flips the sign of loading
+    starts, so a genuinely negative loading (e.g. tone vs GT) is reachable."""
     rng = np.random.default_rng(seed)
     mod = LadderDFM(endog, factor=factor, idio=idio)
     base = mod.start_params
+    nm = mod.param_names
+    is_load = np.array([n.startswith("lambda") for n in nm])
     results = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
         for s in range(n_starts):
-            sp = base if s == 0 else base * np.exp(rng.normal(0, 0.5, size=base.shape))
+            if s == 0:
+                sp = base.copy()
+            else:
+                sp = base * np.exp(rng.normal(0, 0.5, size=base.shape))
+                flip = rng.choice([-1.0, 1.0], size=base.shape)
+                sp = np.where(is_load, sp * flip, sp)      # explore both loading signs
             try:
                 r = mod.fit(sp, disp=False, method="lbfgs", maxiter=maxiter)
                 r = mod.fit(r.params, disp=False, method="nm", maxiter=2 * maxiter)
